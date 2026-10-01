@@ -62,7 +62,26 @@ These apply to all three tools and are treated as requirements, not suggestions.
 
 ## Install
 
-From source (Homebrew tap is planned). Needs Go 1.22+ and the Xcode command line tools (for `lipo`):
+One line, no Go or Xcode needed:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/EmberGuild-Labs/tomfoolery/main/install.sh | sh
+```
+
+The script downloads the prebuilt universal (Apple Silicon + Intel) binary from the latest [GitHub release](https://github.com/EmberGuild-Labs/tomfoolery/releases), checks its SHA-256, installs it to `~/.local/bin` (no sudo), and runs `tomfoolery install` (described below), with the intro. Read it first if you like: [install.sh](install.sh). Options are environment variables placed after the pipe, e.g. `| TOMFOOLERY_NO_INTRO=1 sh`:
+
+| Variable | Effect |
+|---|---|
+| `TOMFOOLERY_PREFIX=/usr/local` | Install to `$PREFIX/bin` instead of `~/.local/bin` |
+| `TOMFOOLERY_VERSION=v0.1.1` | Install a specific release instead of the latest |
+| `TOMFOOLERY_NO_INTRO=1` | Skip the EmberGuild Labs intro |
+| `TOMFOOLERY_NO_SETUP=1` | Install the binary only; run `tomfoolery install` yourself later |
+
+Or download `tomfoolery-darwin-universal.tar.gz` from the releases page by hand, put `tomfoolery` somewhere on your PATH, and run `tomfoolery install`. A file downloaded in a browser is quarantined by Gatekeeper, because the binary is not notarized. Clear that with `xattr -d com.apple.quarantine tomfoolery`. The curl installer does not have this problem.
+
+### From source
+
+Homebrew tap is planned. Needs Go 1.22+ and the Xcode command line tools (for `lipo`):
 
 ```sh
 git clone https://github.com/EmberGuild-Labs/tomfoolery.git
@@ -480,6 +499,16 @@ Terminal.app's window restoration can bring back a closed window as a plain shel
 
 ---
 
+## Releasing
+
+Tag, build the release artifacts, and publish them. `install.sh` always picks up the latest release.
+
+```sh
+git tag v0.2.0 && git push origin v0.2.0
+make dist                       # dist/tomfoolery-darwin-universal.tar.gz + dist/SHA256SUMS
+gh release create v0.2.0 dist/* --title v0.2.0 --generate-notes
+```
+
 ## Development
 
 ```sh
@@ -527,6 +556,7 @@ Decisions made while building v0.1.0:
 - **Milestone lines** show for the whole of the milestone day. Other brag lines rotate hourly, seeded by the boot, so the window doesn't flicker between lines on each redraw.
 - **pkill/killall** are best-effort. `killall` is only wrapped in its simple form (`killall [-SIGNAL] name...`), and any other flag passes straight through. A single kill shows at most 5 full eulogies; the rest are summarized.
 - **Kill snapshots** are refused if the path is outside `~/.local/state/tomfoolery/kill/`, and leftovers older than an hour are cleaned up.
+- **Easy install for others:** a `curl | sh` script plus prebuilt release binaries, so people don't need Go or Xcode. When piped, the script re-attaches setup to `/dev/tty`, so the intro still plays and can be skipped with a key. Releases are published with `make dist` and `gh release create`. The binary is ad-hoc signed (Go does this for arm64) but not notarized, which only matters for browser downloads.
 - **Public repo** at github.com/EmberGuild-Labs/tomfoolery, by explicit choice for this project (other EmberGuild Labs repos default to private).
 - **Known rough edge:** Terminal asks for confirmation when you close the brag window, because a non-shell process is running in it (see Troubleshooting).
 

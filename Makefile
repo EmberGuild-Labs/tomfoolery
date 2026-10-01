@@ -6,7 +6,7 @@ VERSION  ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo 0.1
 LDFLAGS  := -s -w -X github.com/EmberGuild-Labs/tomfoolery/internal/cli.Version=$(VERSION)
 PKG      := ./cmd/tomfoolery
 
-.PHONY: build test lint install dev-install uninstall clean
+.PHONY: build test lint install dev-install dist clean
 
 build:
 	@mkdir -p $(BUILD)
@@ -34,5 +34,14 @@ install: build
 dev-install: build
 	$(BUILD)/$(BIN) install --no-intro
 
+# Release artifacts that install.sh downloads: a tarball and its checksum.
+dist: build
+	@rm -rf dist && mkdir -p dist/stage
+	cp $(BUILD)/$(BIN) README.md LICENSE dist/stage/
+	tar -czf dist/$(BIN)-darwin-universal.tar.gz -C dist/stage .
+	@rm -rf dist/stage
+	cd dist && shasum -a 256 $(BIN)-darwin-universal.tar.gz > SHA256SUMS
+	@cat dist/SHA256SUMS
+
 clean:
-	rm -rf $(BUILD)
+	rm -rf $(BUILD) dist
