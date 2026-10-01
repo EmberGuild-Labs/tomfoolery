@@ -239,6 +239,53 @@ func Candidates(entries []Entry, env Env) []Candidate {
 			"%s is %s. Nobody asked it to take up that much room.",
 		), q(largest.Name), words.Bytes(largest.Size)))
 	}
+	// Fallbacks, so an unremarkable directory still gets a line when the
+	// frequency is high enough that gossip is expected every time.
+	if len(out) < 2 && len(entries) > 0 {
+		out = append(out, fallbacks(entries, r)...)
+	}
+	return out
+}
+
+func fallbacks(entries []Entry, r *rand.Rand) []Candidate {
+	var out []Candidate
+	add := func(text string) { out = append(out, Candidate{Kind: "fallback", Text: text}) }
+	n := int64(len(entries))
+	someone := q(entries[r.Intn(len(entries))].Name)
+
+	add(fmt.Sprintf(pick(r,
+		"%s things live here, and they are all pretending not to listen.",
+		"%s residents. Everyone is being suspiciously normal today.",
+	), words.Capitalize(words.Number(n))))
+	add(fmt.Sprintf(pick(r,
+		"%s has been very quiet lately. Too quiet.",
+		"Nobody has seen %s do anything interesting in weeks.",
+		"%s knows something. It isn't saying what.",
+	), someone))
+
+	dirs := 0
+	exts := map[string]int{}
+	for _, e := range entries {
+		if e.IsDir {
+			dirs++
+			continue
+		}
+		if _, ext := splitExt(e.Name); ext != "" {
+			exts[strings.ToLower(ext)]++
+		}
+	}
+	switch {
+	case dirs == len(entries) && dirs > 1:
+		add("Nothing but folders in here. Everyone is hiding something inside something else.")
+	case dirs == 0 && len(entries) > 1:
+		add("Not a single folder. Everyone here lives out in the open.")
+	}
+	for ext, c := range exts {
+		if c >= 3 && c*2 > len(entries) {
+			add(fmt.Sprintf("Mostly %s files in here. They stick together.", ext))
+			break
+		}
+	}
 	return out
 }
 

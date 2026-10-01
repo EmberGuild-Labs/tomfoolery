@@ -454,7 +454,19 @@ rm -rf ~/.config/tomfoolery ~/.local/state/tomfoolery
 ## Troubleshooting
 
 **`ls-gossip` is on but I never see gossip.**
-The roll is 35% by default, and several conditions must hold (see [When gossip appears](#when-gossip-appears)). Run `ls-gossip now` to force one. If that prints nothing, open a new tab so the hook is loaded, and check that `type ls` reports a shell function.
+First, terminal tabs that were already open during `tomfoolery install` don't have the hook. Open a new tab or run `source ~/.zshrc`, and check that `type ls` reports a shell function. Beyond that, gossip is quiet by default: a 35% roll, a 20-second cooldown, and at least 4 entries (see [When gossip appears](#when-gossip-appears)). Run `ls-gossip now` to force one.
+
+**I want gossip on every `ls`.**
+Set these in `~/.config/tomfoolery/config.toml` (or run `ls-gossip freq 100` for the first one):
+
+```toml
+[ls_gossip]
+frequency = 100
+cooldown_seconds = 0
+min_entries = 1
+```
+
+Every directory with at least one entry has something to say. When nothing specific stands out, a fallback line about the residents is used.
 
 **I have an `ls` alias.**
 The hook defines its wrappers with `function ls { ... }` rather than `ls() { ... }`, so an existing alias cannot break the definition. An alias such as `alias ls='ls -G'` keeps working and still goes through the wrapper. An alias to a different program (for example `alias ls='eza'`) bypasses the wrapper, and `tomfoolery install` prints a note when it sees one.
